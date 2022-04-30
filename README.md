@@ -4,6 +4,5 @@ I write many little script which inspire my life from 13 years, hope this may he
 
 some of them learn from other place, I will add reference at the beginning if I remmember.
 
-# find your raspberry pi
-
-[find your pi](find_your_pi.sh)
+[Find your raspberry pi](find_your_pi.sh)
+[Stop gnome tracker eat all your disk space](stop_gnome_tracker_eat_all_your_disk_space.sh)
