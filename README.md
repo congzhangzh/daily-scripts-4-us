@@ -48,17 +48,31 @@ Tips: put the file with your ccache.exe
 
 #### 2. run some tools which work with CC&CXX Environment Variable
 ```bat
-CC=c:\ccache\ccache_cl_wrapper.bat
-CXX=c:\ccache\ccache_cl_wrapper.bat
-
-cmake -G Ninja -S your_src_dir -B your_build_dir
+set CC=c:\ccache\ccache_cl_wrapper.bat
+set CXX=c:\ccache\cmake -G Ninja -S your_src_dir -B your_build_dir
 ```
+
+**For work with vcpkg**
+```bat
+set VCPKG_KEEP_ENV_VARS=CC;CXX
+```
+
+Ref: https://learn.microsoft.com/en-us/vcpkg/users/config-environment#vcpkg_keep_env_vars
 
 ### - [The third way] Work with CMake by CMAKE_C_COMPILER_LAUNCHER and CMAKE_CXX_COMPILER_LAUNCHER
 
 ```bat
 cmake -G Ninja -DCMAKE_C_COMPILER_LAUNCHER="c:\ccache\ccache.exe" -DCMAKE_CXX_COMPILER_LAUNCHER="c:\ccache\ccache.exe" -S your_src_dir -B your_build_dir
 ```
+
+**For work with vcpkg**
+```bat
+set CMAKE_C_COMPILER_LAUNCHER="c:\ccache\ccache.exe"
+set CMAKE_CXX_COMPILER_LAUNCHER="c:\ccache\ccache.exe" 
+set VCPKG_KEEP_ENV_VARS=CMAKE_C_COMPILER_LAUNCHER;CMAKE_CXX_COMPILER_LAUNCHER
+```
+
+Ref: https://learn.microsoft.com/en-us/vcpkg/users/config-environment#vcpkg_keep_env_vars
 
 ## 3. The hard part
 
