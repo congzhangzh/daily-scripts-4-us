@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tips:
+The first way:
+  put it in some upper dir
+The second way:
+  maybe append to your msbuild command /p:ForceImportAfterCppTargets=this_file_path
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemDefinitionGroup>
+    <!-- ref: https://github.com/MicrosoftDocs/visualstudio-docs/blob/main/docs/msbuild/link-task.md -->
+    <Link>
+      <!-- just a sample here -->
+      <!-- <ForceFileOutput>MultiplyDefinedSymbolOnly</ForceFileOutput> -->
+    </Link>    
+  </ItemDefinitionGroup>
+</Project>
+<!-- Refs: 
+1. https://learn.microsoft.com/en-us/visualstudio/msbuild/customize-by-directory?view=vs-2022
+2. https://learn.microsoft.com/en-us/visualstudio/msbuild/customize-cpp-builds?view=vs-2022
+-->

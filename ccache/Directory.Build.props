@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tips:
+The first way:
+  put it in some upper dir
+The second way:
+  append to your msbuild command /p:ForceImportAfterCppProps=this_file_path 
+-->
+<Project>
+  <PropertyGroup>
+    <!-- Tips: use your ccache install dir here-->
+    <CLToolPath>c:\ccache\</CLToolPath>
+  </PropertyGroup>
+  <!-- The following will set the needed properties described in Tips above. -->
+  <!-- Creation of a precompiled header will have to be disabled separately. -->
+  <PropertyGroup>
+    <UseMultiToolTask>true</UseMultiToolTask>
+    <!-- Tips: use your ncpu+1 -->
+    <MultiProcMaxCount>5</MultiProcMaxCount>
+    <EnforceProcessCountAcrossBuilds>true</EnforceProcessCountAcrossBuilds>
+    <TrackFileAccess>false</TrackFileAccess>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <DebugInformationFormat>OldStyle</DebugInformationFormat>
+      <ForcedIncludeFiles />
+      <ObjectFileName>$(IntDir)%(FileName).obj</ObjectFileName>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <!-- TBD: <TrackFileAccess>false</TrackFileAccess> -->
+    </ClCompile>
+  </ItemDefinitionGroup>
+</Project>
+<!-- Refs: 
+1. https://learn.microsoft.com/en-us/visualstudio/msbuild/customize-by-directory?view=vs-2022
+2. https://learn.microsoft.com/en-us/visualstudio/msbuild/customize-cpp-builds?view=vs-2022
+-->
