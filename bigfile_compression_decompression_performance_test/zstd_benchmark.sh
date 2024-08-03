@@ -1,5 +1,7 @@
 #!/bin/bash
 
+Tips: This work done by me, which work with claude ai :)
+
 # 函数：显示使用说明
 show_usage() {
     echo "Usage: $0 -i <input_file> [-d]"
