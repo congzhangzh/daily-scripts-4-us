@@ -541,6 +541,7 @@ echo "======= create zfs pools and datasets =========="
 encryption_options=()
 rpool_disks_partitions=()
 bpool_disks_partitions=()
+efi_disks_partitions=()
 
 if [[ $v_encrypt_rpool == "1" ]]; then
   encryption_options=(-O "encryption=aes-256-gcm" -O "keylocation=prompt" -O "keyformat=passphrase")
@@ -550,9 +551,11 @@ for selected_disk in "${v_selected_disks[@]}"; do
   if [[ "$selected_disk" == /dev/vd* ]]; then
     rpool_disks_partitions+=("${selected_disk}3") 
     bpool_disks_partitions+=("${selected_disk}2") 
+    efi_disks_partitions+=("${selected_disk}1")
   else
     rpool_disks_partitions+=("${selected_disk}-part3")
     bpool_disks_partitions+=("${selected_disk}-part2")
+    efi_disks_partitions+=("${selected_disk}-part1")
   fi
 done
 
@@ -762,7 +765,16 @@ chroot_execute "echo options zfs zfs_arc_max=$((v_zfs_arc_max_mb * 1024 * 1024))
 
 echo "======= setting up grub =========="
 chroot_execute "echo 'grub-efi grub-efi/install_devices_empty   boolean true' | debconf-set-selections"
-chroot_execute "DEBIAN_FRONTEND=noninteractive apt install --yes grub-efi"
+#chroot_execute "DEBIAN_FRONTEND=noninteractive apt install --yes grub-efi"
+
+chroot_execute "apt install dosfstools"
+
+#TODO just do for first disk's efi partitions?
+chroot_execute "mkdosfs -F 32 -s 1 -n EFI ${efi_disks_partitions}"
+chroot_execute "mkdir /boot/efi"
+chroot_execute "echo ${efi_disks_partitions} /boot/efi vfat defaults 0 0 >> /etc/fstab"
+chroot_execute "mount /boot/efi"
+chroot_execute "DEBIAN_FRONTEND=noninteractive apt install --yes grub-efi-amd64 shim-signed"
 
 for disk in ${v_selected_disks[@]}; do
   chroot_execute "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck $disk"
