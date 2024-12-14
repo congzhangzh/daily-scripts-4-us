@@ -7,7 +7,7 @@ WARNING: all data on the disk will be destroyed
 How to use: add SSH key to the rescue console, set it OS to linux64, then press "mount rescue and power cycle" button
 Next, connect via SSH to console, and run the script
 Answer script questions about desired hostname, ZFS ARC cache size et cetera
-To cope with network failures its higly recommended to run the script inside screen console
+To cope with network failures its highly recommended to run the script inside screen console
 screen -dmS zfs
 screen -r zfs
 To detach from screen console, hit Ctrl-d then a
@@ -81,7 +81,6 @@ function print_step_info_header {
     echo -n " $1" 
   fi
 
-
   echo "
 ###############################################################################
 "
@@ -121,7 +120,7 @@ function display_intro_banner {
 
   local dialog_message='Hello!
 This script will prepare the ZFS pools, then install and configure minimal Debian 11 with ZFS root on Hetzner hosting VPS instance
-The script with minimal changes may be used on any other hosting provider  supporting KVM virtualization and offering Debian-based rescue system.
+The script with minimal changes may be used on any other hosting provider supporting KVM virtualization and offering Debian-based rescue system.
 In order to stop the procedure, hit Esc twice during dialogs (excluding yes/no ones), or Ctrl+C while any operation is running.
 '
   dialog --msgbox "$dialog_message" 30 100
@@ -199,6 +198,7 @@ function find_suitable_disks {
   local mounted_devices
 
   candidate_disk_ids=$(find /dev/disk/by-id -regextype awk -regex '.+/(ata|nvme|scsi)-.+' -not -regex '.+-part[0-9]+$' | sort)
+  candidate_disk_ids+=" $(ls /dev/vd*)"
   mounted_devices="$(df | awk 'BEGIN {getline} {print $1}' | xargs -n 1 lsblk -no pkname 2> /dev/null | sort -u || true)"
 
   while read -r disk_id || [[ -n "$disk_id" ]]; do
@@ -312,7 +312,6 @@ function ask_zfs_arc_max_size {
   print_variables v_zfs_arc_max_mb
 }
 
-
 function ask_pool_names {
   # shellcheck disable=SC2119
   print_step_info_header
@@ -344,7 +343,6 @@ function ask_pool_tweaks {
 
   print_variables v_bpool_tweaks v_rpool_tweaks
 }
-
 
 function ask_root_password {
   # shellcheck disable=SC2119
@@ -452,7 +450,7 @@ function unmount_and_export_fs {
   while (( zpools_exported == 99 )) && (( SECONDS++ <= 60 )); do    
     if zpool export -a 2> /dev/null; then
       zpools_exported=1
-      echo "all zfs pools were succesfully exported"
+      echo "all zfs pools were successfully exported"
       break;
     else
       sleep 1
@@ -509,63 +507,56 @@ done
 
 echo "======= installing zfs on rescue system =========="
 
-  echo "zfs-dkms zfs-dkms/note-incompatible-licenses note true" | debconf-set-selections  
-#  echo "y" | zfs
-# linux-headers-generic linux-image-generic
-  apt install --yes software-properties-common dpkg-dev dkms
-  #rm -f "$(which zfs)"
-  #rm -f "$(which zpool)"
-  echo -e "deb http://$debian_repo_server/debian/ bookworm main contrib non-free-firmware" >/etc/apt/sources.list
-  #echo -e "Package: src:zfs-linux\nPin: release n=bookworm\nPin-Priority: 990\n" > /etc/apt/preferences.d/90_zfs
-  apt update  
+echo "zfs-dkms zfs-dkms/note-incompatible-licenses note true" | debconf-set-selections  
+apt install --yes software-properties-common dpkg-dev dkms
+echo -e "deb http://$c_deb_packages_repo/bookworm main contrib non-free-firmware" >/etc/apt/sources.list
+apt update  
 
-  which gsettings && set org.gnome.desktop.media-handling automount false || :
+which gsettings && set org.gnome.desktop.media-handling automount false || :
 
-  apt install --yes debootstrap gdisk zfsutils-linux
-  #rm /etc/apt/sources.list.d/bookworm-bookworm.list
-  #rm /etc/apt/preferences.d/90_zfs
-  apt update
-  export PATH=$PATH:/usr/sbin
-  zfs --version
+apt install --yes debootstrap gdisk zfsutils-linux
+apt update
+export PATH=$PATH:/usr/sbin
+zfs --version
 
 echo "======= partitioning the disk =========="
 
-  if [[ $v_free_tail_space -eq 0 ]]; then
-    tail_space_parameter=0
-  else
-    tail_space_parameter="-${v_free_tail_space}G"
-  fi
+if [[ $v_free_tail_space -eq 0 ]]; then
+  tail_space_parameter=0
+else
+  tail_space_parameter="-${v_free_tail_space}G"
+fi
 
-  for selected_disk in "${v_selected_disks[@]}"; do
-    wipefs --all --force "$selected_disk"
-    sgdisk -a1 -n1:24K:+1000K            -t1:EF02 "$selected_disk"
-    sgdisk -n2:0:+2G                   -t2:BF01 "$selected_disk" # Boot pool
-    sgdisk -n3:0:"$tail_space_parameter" -t3:BF01 "$selected_disk" # Root pool
-  done
+for selected_disk in "${v_selected_disks[@]}"; do
+  wipefs --all --force "$selected_disk"
+  sgdisk -a1 -n1:1M:+512M -t1:EF00 "$selected_disk" # EFI System Partition
+  sgdisk -n2:0:+2G -t2:BF01 "$selected_disk" # Boot pool
+  sgdisk -n3:0:"$tail_space_parameter" -t3:BF01 "$selected_disk" # Root pool
+done
 
-  udevadm settle
+udevadm settle
 
 echo "======= create zfs pools and datasets =========="
 
-  encryption_options=()
-  rpool_disks_partitions=()
-  bpool_disks_partitions=()
+encryption_options=()
+rpool_disks_partitions=()
+bpool_disks_partitions=()
 
-  if [[ $v_encrypt_rpool == "1" ]]; then
-    encryption_options=(-O "encryption=aes-256-gcm" -O "keylocation=prompt" -O "keyformat=passphrase")
+if [[ $v_encrypt_rpool == "1" ]]; then
+  encryption_options=(-O "encryption=aes-256-gcm" -O "keylocation=prompt" -O "keyformat=passphrase")
+fi
+
+for selected_disk in "${v_selected_disks[@]}"; do
+  rpool_disks_partitions+=("${selected_disk}-part3")
+  bpool_disks_partitions+=("${selected_disk}-part2")
+done
+
+pools_mirror_option=
+if [[ ${#v_selected_disks[@]} -gt 1 ]]; then
+  if dialog --defaultno --yesno "Do you want to use mirror mode for ${v_selected_disks[*]}?" 30 100; then 
+    pools_mirror_option=mirror
   fi
-
-  for selected_disk in "${v_selected_disks[@]}"; do
-    rpool_disks_partitions+=("${selected_disk}-part3")
-    bpool_disks_partitions+=("${selected_disk}-part2")
-  done
-
-  pools_mirror_option=
-  if [[ ${#v_selected_disks[@]} -gt 1 ]]; then
-    if dialog --defaultno --yesno "Do you want to use mirror mode for ${v_selected_disks[*]}?" 30 100; then 
-      pools_mirror_option=mirror
-    fi
-  fi
+fi
 
 # shellcheck disable=SC2086
 zpool create \
@@ -593,7 +584,6 @@ zfs create -o canmount=noauto -o mountpoint=/boot "$v_bpool_name/BOOT/debian"
 zfs mount "$v_bpool_name/BOOT/debian"
 
 zfs create                                 "$v_rpool_name/home"
-#zfs create -o mountpoint=/root             "$v_rpool_name/home/root"
 zfs create -o canmount=off                 "$v_rpool_name/var"
 zfs create                                 "$v_rpool_name/var/log"
 zfs create                                 "$v_rpool_name/var/spool"
@@ -677,7 +667,6 @@ echo "======= setting locale, console and language =========="
 chroot_execute "apt install --yes -qq locales debconf-i18n apt-utils"
 sed -i 's/# en_US.UTF-8/en_US.UTF-8/' "$c_zfs_mount_dir/etc/locale.gen"
 sed -i 's/# fr_FR.UTF-8/fr_FR.UTF-8/' "$c_zfs_mount_dir/etc/locale.gen"
-sed -i 's/# fr_FR.UTF-8/fr_FR.UTF-8/' "$c_zfs_mount_dir/etc/locale.gen"
 sed -i 's/# de_AT.UTF-8/de_AT.UTF-8/' "$c_zfs_mount_dir/etc/locale.gen"
 sed -i 's/# de_DE.UTF-8/de_DE.UTF-8/' "$c_zfs_mount_dir/etc/locale.gen"
 
@@ -711,7 +700,7 @@ console-setup   console-setup/fontsize-text47   select  8x16
 console-setup   console-setup/codesetcode       string  Lat15
 tzdata tzdata/Areas select Europe
 tzdata tzdata/Zones/Europe select Vienna
-grub-pc grub-pc/install_devices_empty   boolean true
+grub-efi grub-efi/install_devices_empty   boolean true
 CONF'
 
 chroot_execute "dpkg-reconfigure locales -f noninteractive"
@@ -725,7 +714,6 @@ chroot_execute "rm -f /etc/localtime /etc/timezone"
 chroot_execute "dpkg-reconfigure tzdata -f noninteractive"
 
 echo "======= installing latest kernel============="
-# linux-headers-generic linux-image-generic
 chroot_execute "apt install --yes linux-image${v_kernel_variant}-amd64 linux-headers${v_kernel_variant}-amd64 dpkg-dev"
 
 echo "======= installing aux packages =========="
@@ -762,18 +750,17 @@ echo "======= set root password =========="
 chroot_execute "echo root:$(printf "%q" "$v_root_password") | chpasswd"
 
 echo "======= setting up zfs cache =========="
-
 cp /etc/zpool.cache "$c_zfs_mount_dir/etc/zfs/zpool.cache"
 
 echo "========setting up zfs module parameters========"
 chroot_execute "echo options zfs zfs_arc_max=$((v_zfs_arc_max_mb * 1024 * 1024)) >> /etc/modprobe.d/zfs.conf"
 
 echo "======= setting up grub =========="
-chroot_execute "echo 'grub-pc grub-pc/install_devices_empty   boolean true' | debconf-set-selections"
-chroot_execute "DEBIAN_FRONTEND=noninteractive apt install --yes grub-legacy"
-chroot_execute "DEBIAN_FRONTEND=noninteractive apt install --yes grub-pc"
+chroot_execute "echo 'grub-efi grub-efi/install_devices_empty   boolean true' | debconf-set-selections"
+chroot_execute "DEBIAN_FRONTEND=noninteractive apt install --yes grub-efi"
+
 for disk in ${v_selected_disks[@]}; do
-  chroot_execute "grub-install --recheck $disk"
+  chroot_execute "grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB --recheck $disk"
 done
 
 chroot_execute "sed -i 's/#GRUB_TERMINAL=console/GRUB_TERMINAL=console/g' /etc/default/grub"
