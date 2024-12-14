@@ -198,7 +198,7 @@ function find_suitable_disks {
   local mounted_devices
 
   candidate_disk_ids=$(find /dev/disk/by-id -regextype awk -regex '.+/(ata|nvme|scsi)-.+' -not -regex '.+-part[0-9]+$' | sort)
-  candidate_disk_ids+=" $(ls /dev/vd*)"
+  candidate_disk_ids+=" $(ls /dev/vd{a,b,c,d})" # TODO a better way?
   mounted_devices="$(df | awk 'BEGIN {getline} {print $1}' | xargs -n 1 lsblk -no pkname 2> /dev/null | sort -u || true)"
 
   while read -r disk_id || [[ -n "$disk_id" ]]; do
@@ -547,8 +547,13 @@ if [[ $v_encrypt_rpool == "1" ]]; then
 fi
 
 for selected_disk in "${v_selected_disks[@]}"; do
-  rpool_disks_partitions+=("${selected_disk}-part3")
-  bpool_disks_partitions+=("${selected_disk}-part2")
+  if [[ "$selected_disk" == /dev/vd* ]]; then
+    rpool_disks_partitions+=("${selected_disk}3") 
+    bpool_disks_partitions+=("${selected_disk}2") 
+  else
+    rpool_disks_partitions+=("${selected_disk}-part3")
+    bpool_disks_partitions+=("${selected_disk}-part2")
+  fi
 done
 
 pools_mirror_option=
