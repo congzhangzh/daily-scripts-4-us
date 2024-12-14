@@ -515,7 +515,7 @@ echo "======= installing zfs on rescue system =========="
   apt install --yes software-properties-common dpkg-dev dkms
   #rm -f "$(which zfs)"
   #rm -f "$(which zpool)"
-  echo -e "deb http://$debian_repo_server/debian/ bookworm main contrib non-free-firmware" >/etc/apt/sources.list
+  echo -e "deb $debian_repo_server/debian/ bookworm main contrib non-free-firmware" >/etc/apt/sources.list
   #echo -e "Package: src:zfs-linux\nPin: release n=bookworm\nPin-Priority: 990\n" > /etc/apt/preferences.d/90_zfs
   apt update  
 

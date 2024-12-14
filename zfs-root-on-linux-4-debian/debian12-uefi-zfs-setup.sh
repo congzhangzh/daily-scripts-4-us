@@ -509,7 +509,7 @@ echo "======= installing zfs on rescue system =========="
 
 echo "zfs-dkms zfs-dkms/note-incompatible-licenses note true" | debconf-set-selections  
 apt install --yes software-properties-common dpkg-dev dkms
-echo -e "deb http://$c_deb_packages_repo/bookworm main contrib non-free-firmware" >/etc/apt/sources.list
+echo -e "deb $c_deb_packages_repo/bookworm main contrib non-free-firmware" >/etc/apt/sources.list
 apt update  
 
 which gsettings && set org.gnome.desktop.media-handling automount false || :
