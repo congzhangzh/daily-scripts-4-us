@@ -643,6 +643,7 @@ ff02::2 ip6-allrouters
 ff02::3 ip6-allhosts
 CONF
 
+#TODO: ipv6 addr will not always exists, and the name maybe not be eth0
 ip6addr_prefix=$(ip -6 a s | grep -E "inet6.+global" | sed -nE 's/.+inet6\s(([0-9a-z]{1,4}:){4,4}).+/\1/p' | head -n 1)
 
 cat <<CONF > "$c_zfs_mount_dir/etc/systemd/network/10-eth0.network"
@@ -788,8 +789,13 @@ chroot_execute "sed -i 's/quiet//g' /etc/default/grub"
 chroot_execute "sed -i 's/splash//g' /etc/default/grub"
 chroot_execute "echo 'GRUB_DISABLE_OS_PROBER=true'   >> /etc/default/grub"
 
+#TODO
 for ((i = 1; i < ${#v_selected_disks[@]}; i++)); do
-  dd if="${v_selected_disks[0]}-part1" of="${v_selected_disks[i]}-part1"
+  if [[ "${v_selected_disks[0]}" == /dev/vd* ]]; then
+    dd if="${v_selected_disks[0]}1" of="${v_selected_disks[i]}1"
+  else
+    dd if="${v_selected_disks[0]}-part1" of="${v_selected_disks[i]}-part1"
+  fi
 done
 
 if [[ $v_encrypt_rpool == "1" ]]; then
