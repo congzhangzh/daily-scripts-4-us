@@ -201,7 +201,7 @@ function find_suitable_disks {
   candidate_disk_ids+=( $(ls /dev/vd?) )
   mounted_devices="$(df | awk 'BEGIN {getline} {print $1}' | xargs -n 1 lsblk -no pkname 2> /dev/null | sort -u || true)"
 
-  while read -r disk_id || [[ -n "$disk_id" ]]; do
+  for disk_id in "${candidate_disk_ids[@]}" ; do
     local device_info
 
     device_info="$(udevadm info --query=property "$(readlink -f "$disk_id")")"
@@ -221,7 +221,7 @@ $(udevadm info --query=property "$(readlink -f "$disk_id")")
 
 LOG
 
-  done < <(echo -n "$candidate_disk_ids")
+  done
 
   if [[ ${#v_suitable_disks[@]} -eq 0 ]]; then
     local dialog_message='No suitable disks have been found!
@@ -509,7 +509,7 @@ echo "======= installing zfs on rescue system =========="
 
 echo "zfs-dkms zfs-dkms/note-incompatible-licenses note true" | debconf-set-selections  
 apt install --yes software-properties-common dpkg-dev dkms
-echo -e "deb $c_deb_packages_repo/bookworm main contrib non-free-firmware" >/etc/apt/sources.list
+echo -e "deb $c_deb_packages_repo bookworm main contrib non-free-firmware" > /etc/apt/sources.list
 apt update  
 
 which gsettings && set org.gnome.desktop.media-handling automount false || :
